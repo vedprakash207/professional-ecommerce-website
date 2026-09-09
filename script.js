@@ -80,6 +80,7 @@ const services = [
 
 // Shopping Cart
 let cart = [];
+let selectedPaymentMethod = '';
 
 // IMPORTANT: Replace these with your actual Razorpay credentials from dashboard
 // Get these from: https://dashboard.razorpay.com/
@@ -87,6 +88,50 @@ const RAZORPAY_KEY_ID = 'rzp_live_YOUR_KEY_ID'; // Replace with your Key ID
 const MERCHANT_NAME = 'PremiumHub';
 const MERCHANT_EMAIL = 'vedprakash05422@gmail.com';
 const MERCHANT_PHONE = '8208072975';
+
+// Payment method configurations
+const PAYMENT_METHODS = {
+    googlepay: {
+        name: 'Google Pay',
+        icon: 'fab fa-google',
+        description: 'Pay with Google Pay'
+    },
+    phonepe: {
+        name: 'PhonePe',
+        icon: 'fas fa-mobile-alt',
+        description: 'Pay with PhonePe'
+    },
+    paytm: {
+        name: 'Paytm',
+        icon: 'fas fa-wallet',
+        description: 'Pay with Paytm'
+    },
+    upi: {
+        name: 'UPI',
+        icon: 'fas fa-qrcode',
+        description: 'Pay via UPI'
+    },
+    card: {
+        name: 'Credit Card',
+        icon: 'fas fa-credit-card',
+        description: 'Visa, Mastercard, Amex'
+    },
+    debit: {
+        name: 'Debit Card',
+        icon: 'fas fa-credit-card',
+        description: 'All Banks'
+    },
+    netbanking: {
+        name: 'Net Banking',
+        icon: 'fas fa-university',
+        description: 'All Banks'
+    },
+    wallet: {
+        name: 'Wallet',
+        icon: 'fas fa-wallet',
+        description: 'Digital Wallets'
+    }
+};
 
 // DOM Elements
 const productsGrid = document.getElementById('productsGrid');
@@ -100,7 +145,7 @@ const contactForm = document.getElementById('contactForm');
 const hamburger = document.getElementById('hamburger');
 const navMenu = document.querySelector('.nav-menu');
 const navLinks = document.querySelectorAll('.nav-link');
-const razorpayBtn = document.getElementById('razorpayBtn');
+const payNowBtn = document.getElementById('payNowBtn');
 
 // Initialize
 function init() {
@@ -112,7 +157,7 @@ function init() {
 // Render Products
 function renderProducts() {
     if (products.length === 0) {
-        productsGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 2rem; color: #9ca3af;">No products available yet. <a href="admin.html" style="color: #6366f1; font-weight: 600;">Add products now</a></p>';
+        productsGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 2rem; color: #9ca3af;">No products available yet. <a href="admin.html" style="color: #6366f1; font-weight: bold;">Add products here</a></p>';
         return;
     }
     
@@ -220,6 +265,12 @@ function showNotification(message) {
 function openPaymentModal() {
     paymentModal.classList.add('active');
     renderOrderSummary();
+    selectedPaymentMethod = '';
+    document.getElementById('selectedPaymentMethod').value = '';
+    // Remove active class from all payment method buttons
+    document.querySelectorAll('.payment-method-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
 }
 
 // Close Payment Modal
@@ -244,8 +295,20 @@ function renderOrderSummary() {
     summaryTotal.textContent = `₹${(total / 100).toFixed(2)}`;
 }
 
-// Process Razorpay Payment
-function processRazorpayPayment() {
+// Handle Payment Method Selection
+function selectPaymentMethod(method) {
+    selectedPaymentMethod = method;
+    document.getElementById('selectedPaymentMethod').value = method;
+    
+    // Update active button
+    document.querySelectorAll('.payment-method-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.closest('.payment-method-btn').classList.add('active');
+}
+
+// Process Payment
+function processPayment() {
     const fullName = document.getElementById('fullName').value;
     const billingEmail = document.getElementById('billingEmail').value;
     const billingPhone = document.getElementById('billingPhone').value;
@@ -265,28 +328,72 @@ function processRazorpayPayment() {
         return;
     }
 
+    // Validate payment method selection
+    if (!selectedPaymentMethod) {
+        showNotification('Please select a payment method');
+        return;
+    }
+
     // Calculate total amount in paise
     const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
+    // Prepare customer data
+    const customerData = {
+        name: fullName,
+        email: billingEmail,
+        phone: billingPhone,
+        address: address,
+        city: city,
+        zipCode: zipCode,
+        amount: totalAmount,
+        paymentMethod: selectedPaymentMethod
+    };
+
+    // Process based on payment method
+    switch(selectedPaymentMethod) {
+        case 'googlepay':
+        case 'phonepe':
+        case 'paytm':
+        case 'upi':
+        case 'card':
+        case 'debit':
+        case 'netbanking':
+        case 'wallet':
+            processRazorpayPayment(customerData);
+            break;
+        default:
+            showNotification('Invalid payment method selected');
+    }
+}
+
+// Process Razorpay Payment
+function processRazorpayPayment(customerData) {
+    const paymentMethodName = PAYMENT_METHODS[selectedPaymentMethod].name;
+    
     // Create Razorpay order
     const options = {
         key: RAZORPAY_KEY_ID,
-        amount: totalAmount, // Amount in paise
+        amount: customerData.amount, // Amount in paise
         currency: 'INR',
         name: MERCHANT_NAME,
-        description: `Order from ${fullName}`,
+        description: `Order from ${customerData.name} via ${paymentMethodName}`,
         image: 'https://via.placeholder.com/200',
         
         prefill: {
-            name: fullName,
-            email: billingEmail,
-            contact: billingPhone
+            name: customerData.name,
+            email: customerData.email,
+            contact: customerData.phone
         },
         
         notes: {
-            address: address,
-            city: city,
-            zipCode: zipCode
+            address: customerData.address,
+            city: customerData.city,
+            zipCode: customerData.zipCode,
+            paymentMethod: paymentMethodName
+        },
+        
+        method: {
+            emandate: 'netbanking,card,upi,wallet'
         },
         
         theme: {
@@ -294,15 +401,7 @@ function processRazorpayPayment() {
         },
         
         handler: function(response) {
-            handlePaymentSuccess(response, {
-                name: fullName,
-                email: billingEmail,
-                phone: billingPhone,
-                address: address,
-                city: city,
-                zipCode: zipCode,
-                amount: totalAmount
-            });
+            handlePaymentSuccess(response, customerData);
         },
         
         modal: {
@@ -324,17 +423,9 @@ function processRazorpayPayment() {
 
 // Handle Payment Success
 function handlePaymentSuccess(razorpayResponse, customerData) {
-    // Here you would typically send the payment details to your backend
     console.log('Payment successful!', razorpayResponse);
     
-    const message = `
-        ✅ Payment Successful!
-        
-        Transaction ID: ${razorpayResponse.razorpay_payment_id}
-        Amount: ₹${(customerData.amount / 100).toFixed(2)}
-        
-        Order confirmation email sent to ${customerData.email}
-    `;
+    const paymentMethodName = PAYMENT_METHODS[selectedPaymentMethod].name;
     
     showNotification('Payment successful! Order confirmed.');
     
@@ -353,7 +444,7 @@ function handlePaymentSuccess(razorpayResponse, customerData) {
         document.getElementById('zipCode').value = '';
         
         // Show detailed success message
-        showSuccessMessage(razorpayResponse, customerData);
+        showSuccessMessage(razorpayResponse, customerData, paymentMethodName);
     }, 2000);
 }
 
@@ -364,12 +455,17 @@ function handlePaymentError(response) {
 }
 
 // Show Success Message
-function showSuccessMessage(response, data) {
-    const message = `
-Order Confirmed!
+function showSuccessMessage(response, data, paymentMethod) {
+    const message = `Order Confirmed!
 
 Payment ID: ${response.razorpay_payment_id}
+Payment Method: ${paymentMethod}
 Amount: ₹${(data.amount / 100).toFixed(2)}
+
+Order Details:
+Name: ${data.name}
+Email: ${data.email}
+Address: ${data.address}, ${data.city} - ${data.zipCode}
 
 Confirmation email has been sent to ${data.email}
 
@@ -412,11 +508,21 @@ function setupEventListeners() {
         }
     });
 
-    // Razorpay Button
-    if (razorpayBtn) {
-        razorpayBtn.addEventListener('click', (e) => {
+    // Payment Method Buttons
+    const paymentMethodBtns = document.querySelectorAll('.payment-method-btn');
+    paymentMethodBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
             e.preventDefault();
-            processRazorpayPayment();
+            const method = btn.getAttribute('data-method');
+            selectPaymentMethod(method);
+        });
+    });
+
+    // Pay Now Button
+    if (payNowBtn) {
+        payNowBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            processPayment();
         });
     }
 

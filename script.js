@@ -89,47 +89,63 @@ const MERCHANT_NAME = 'PremiumHub';
 const MERCHANT_EMAIL = 'vedprakash05422@gmail.com';
 const MERCHANT_PHONE = '8208072975';
 
+// Your Payment IDs for Direct Transfer
+const YOUR_UPI_ID = 'vedprakash05422@okicici';
+const YOUR_GOOGLE_PAY_PHONE = '8208072975';
+const YOUR_PHONEPE_PHONE = '8208072975';
+
 // Payment method configurations
 const PAYMENT_METHODS = {
     googlepay: {
         name: 'Google Pay',
         icon: 'fab fa-google',
-        description: 'Pay with Google Pay'
+        description: 'Pay with Google Pay',
+        type: 'direct',
+        receiver: YOUR_GOOGLE_PAY_PHONE
     },
     phonepe: {
         name: 'PhonePe',
         icon: 'fas fa-mobile-alt',
-        description: 'Pay with PhonePe'
+        description: 'Pay with PhonePe',
+        type: 'direct',
+        receiver: YOUR_PHONEPE_PHONE
     },
     paytm: {
         name: 'Paytm',
         icon: 'fas fa-wallet',
-        description: 'Pay with Paytm'
+        description: 'Pay with Paytm',
+        type: 'razorpay'
     },
     upi: {
         name: 'UPI',
         icon: 'fas fa-qrcode',
-        description: 'Pay via UPI'
+        description: 'Pay via UPI',
+        type: 'direct',
+        receiver: YOUR_UPI_ID
     },
     card: {
         name: 'Credit Card',
         icon: 'fas fa-credit-card',
-        description: 'Visa, Mastercard, Amex'
+        description: 'Visa, Mastercard, Amex',
+        type: 'razorpay'
     },
     debit: {
         name: 'Debit Card',
         icon: 'fas fa-credit-card',
-        description: 'All Banks'
+        description: 'All Banks',
+        type: 'razorpay'
     },
     netbanking: {
         name: 'Net Banking',
         icon: 'fas fa-university',
-        description: 'All Banks'
+        description: 'All Banks',
+        type: 'razorpay'
     },
     wallet: {
         name: 'Wallet',
         icon: 'fas fa-wallet',
-        description: 'Digital Wallets'
+        description: 'Digital Wallets',
+        type: 'razorpay'
     }
 };
 
@@ -349,20 +365,51 @@ function processPayment() {
         paymentMethod: selectedPaymentMethod
     };
 
-    // Process based on payment method
-    switch(selectedPaymentMethod) {
-        case 'googlepay':
-        case 'phonepe':
-        case 'paytm':
-        case 'upi':
-        case 'card':
-        case 'debit':
-        case 'netbanking':
-        case 'wallet':
-            processRazorpayPayment(customerData);
-            break;
-        default:
-            showNotification('Invalid payment method selected');
+    // Check if it's direct payment or Razorpay
+    const paymentInfo = PAYMENT_METHODS[selectedPaymentMethod];
+    
+    if (paymentInfo.type === 'direct') {
+        // Handle direct payment (Google Pay, PhonePe, UPI)
+        processDirectPayment(customerData, paymentInfo);
+    } else {
+        // Handle Razorpay payment
+        processRazorpayPayment(customerData);
+    }
+}
+
+// Process Direct Payment (Google Pay, PhonePe, UPI)
+function processDirectPayment(customerData, paymentInfo) {
+    const totalAmount = customerData.amount;
+    const receiver = paymentInfo.receiver;
+    const methodName = paymentInfo.name;
+    
+    const message = `
+🔐 PAYMENT DETAILS
+
+Please send ₹${(totalAmount / 100).toFixed(2)} to:
+
+${methodName}:
+${receiver}
+
+Name: ${MERCHANT_NAME}
+Reference: Order from ${customerData.name}
+
+After payment, please screenshot the transaction proof for our records.
+    `;
+    
+    alert(message);
+    
+    // Show confirmation dialog
+    const userConfirmed = confirm(`Have you completed the payment of ₹${(totalAmount / 100).toFixed(2)} via ${methodName}?\n\nClick OK to confirm payment.`);
+    
+    if (userConfirmed) {
+        handlePaymentSuccess(
+            { razorpay_payment_id: 'DIRECT_' + Date.now() },
+            customerData,
+            methodName
+        );
+    } else {
+        showNotification('Payment not confirmed. Please try again.');
     }
 }
 
@@ -401,7 +448,7 @@ function processRazorpayPayment(customerData) {
         },
         
         handler: function(response) {
-            handlePaymentSuccess(response, customerData);
+            handlePaymentSuccess(response, customerData, paymentMethodName);
         },
         
         modal: {
@@ -422,10 +469,8 @@ function processRazorpayPayment(customerData) {
 }
 
 // Handle Payment Success
-function handlePaymentSuccess(razorpayResponse, customerData) {
+function handlePaymentSuccess(razorpayResponse, customerData, paymentMethodName) {
     console.log('Payment successful!', razorpayResponse);
-    
-    const paymentMethodName = PAYMENT_METHODS[selectedPaymentMethod].name;
     
     showNotification('Payment successful! Order confirmed.');
     

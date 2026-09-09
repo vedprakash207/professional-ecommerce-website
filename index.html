@@ -86,7 +86,7 @@
             <div class="about-content">
                 <div class="about-text">
                     <h2>About PremiumHub</h2>
-                    <p>We are committed to providing high-quality goods and professional services to our valued customers. With over 10 years of experience in the industry, we've built a reputation for excellence and customer satisfaction. Our team is dedicated to delivering outstanding value and exceptional service to every customer.</p>
+                    <p>We are committed to providing high-quality goods and professional services to our valued customers. With over 10 years of experience in the industry, we've built a reputation for excellence and customer satisfaction.</p>
                     <div class="about-stats">
                         <div class="stat">
                             <h3>10K+</h3>
@@ -202,8 +202,48 @@
                     </div>
                 </div>
 
-                <!-- Razorpay Button -->
-                <button class="btn btn-primary payment-submit" id="razorpayBtn">Pay Now with Razorpay</button>
+                <!-- Payment Methods -->
+                <div class="payment-methods">
+                    <h4>Select Payment Method</h4>
+                    <div class="methods-grid">
+                        <button class="payment-method-btn" id="googlePayBtn" data-method="googlepay">
+                            <i class="fab fa-google"></i>
+                            <span>Google Pay</span>
+                        </button>
+                        <button class="payment-method-btn" id="phonePeBtn" data-method="phonepe">
+                            <i class="fas fa-mobile-alt"></i>
+                            <span>PhonePe</span>
+                        </button>
+                        <button class="payment-method-btn" id="paytmBtn" data-method="paytm">
+                            <i class="fas fa-wallet"></i>
+                            <span>Paytm</span>
+                        </button>
+                        <button class="payment-method-btn" id="upiBtn" data-method="upi">
+                            <i class="fas fa-qrcode"></i>
+                            <span>UPI</span>
+                        </button>
+                        <button class="payment-method-btn" id="creditCardBtn" data-method="card">
+                            <i class="fas fa-credit-card"></i>
+                            <span>Credit Card</span>
+                        </button>
+                        <button class="payment-method-btn" id="debitCardBtn" data-method="debit">
+                            <i class="fas fa-credit-card"></i>
+                            <span>Debit Card</span>
+                        </button>
+                        <button class="payment-method-btn" id="netBankingBtn" data-method="netbanking">
+                            <i class="fas fa-university"></i>
+                            <span>Net Banking</span>
+                        </button>
+                        <button class="payment-method-btn" id="walletBtn" data-method="wallet">
+                            <i class="fas fa-wallet"></i>
+                            <span>Wallet</span>
+                        </button>
+                    </div>
+                    <input type="hidden" id="selectedPaymentMethod" value="">
+                </div>
+
+                <!-- Pay Button -->
+                <button class="btn btn-primary payment-submit" id="payNowBtn">Pay Now</button>
                 
                 <p class="payment-info">
                     <i class="fas fa-lock"></i> Secure payment powered by Razorpay

@@ -87,10 +87,13 @@ const servicesGrid = document.getElementById('servicesGrid');
 const cartIcon = document.querySelector('.cart-icon');
 const cartModal = document.getElementById('cartModal');
 const closeCartBtn = document.getElementById('closeCart');
+const paymentModal = document.getElementById('paymentModal');
+const closePaymentBtn = document.getElementById('closePayment');
 const contactForm = document.getElementById('contactForm');
 const hamburger = document.getElementById('hamburger');
 const navMenu = document.querySelector('.nav-menu');
 const navLinks = document.querySelectorAll('.nav-link');
+const paymentForm = document.getElementById('paymentForm');
 
 // Initialize
 function init() {
@@ -201,6 +204,96 @@ function showNotification(message) {
     setTimeout(() => notification.remove(), 3000);
 }
 
+// Open Payment Modal
+function openPaymentModal() {
+    paymentModal.classList.add('active');
+    renderOrderSummary();
+    updatePaymentForm();
+}
+
+// Close Payment Modal
+function closePaymentModal() {
+    paymentModal.classList.remove('active');
+}
+
+// Render Order Summary
+function renderOrderSummary() {
+    const summaryItems = document.getElementById('summaryItems');
+    const summaryTotal = document.getElementById('summaryTotal');
+    
+    const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    
+    summaryItems.innerHTML = cart.map(item => `
+        <div class="summary-item">
+            <span>${item.name} x ${item.quantity}</span>
+            <span>$${(item.price * item.quantity).toFixed(2)}</span>
+        </div>
+    `).join('');
+    
+    summaryTotal.textContent = `$${total.toFixed(2)}`;
+    document.getElementById('bankAmount').textContent = `$${total.toFixed(2)}`;
+}
+
+// Update Payment Form based on selected method
+function updatePaymentForm() {
+    const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+    
+    document.getElementById('cardDetails').style.display = paymentMethod === 'credit-card' ? 'block' : 'none';
+    document.getElementById('upiDetails').style.display = paymentMethod === 'upi' ? 'block' : 'none';
+    document.getElementById('bankDetails').style.display = paymentMethod === 'bank-transfer' ? 'block' : 'none';
+    
+    // Update required fields
+    if (paymentMethod === 'credit-card') {
+        document.getElementById('cardName').required = true;
+        document.getElementById('cardNumber').required = true;
+        document.getElementById('cardExpiry').required = true;
+        document.getElementById('cardCVV').required = true;
+        document.getElementById('upiId').required = false;
+        document.getElementById('transactionRef').required = false;
+    } else if (paymentMethod === 'upi') {
+        document.getElementById('upiId').required = true;
+        document.getElementById('cardName').required = false;
+        document.getElementById('cardNumber').required = false;
+        document.getElementById('cardExpiry').required = false;
+        document.getElementById('cardCVV').required = false;
+        document.getElementById('transactionRef').required = false;
+    } else if (paymentMethod === 'bank-transfer') {
+        document.getElementById('transactionRef').required = true;
+        document.getElementById('cardName').required = false;
+        document.getElementById('cardNumber').required = false;
+        document.getElementById('cardExpiry').required = false;
+        document.getElementById('cardCVV').required = false;
+        document.getElementById('upiId').required = false;
+    } else if (paymentMethod === 'paypal') {
+        document.getElementById('cardName').required = false;
+        document.getElementById('cardNumber').required = false;
+        document.getElementById('cardExpiry').required = false;
+        document.getElementById('cardCVV').required = false;
+        document.getElementById('upiId').required = false;
+        document.getElementById('transactionRef').required = false;
+    }
+}
+
+// Validate Card Number
+function validateCardNumber(cardNumber) {
+    return /^\d{16}$/.test(cardNumber.replace(/\s/g, ''));
+}
+
+// Validate Card Expiry
+function validateExpiry(expiry) {
+    return /^\d{2}\/\d{2}$/.test(expiry);
+}
+
+// Validate CVV
+function validateCVV(cvv) {
+    return /^\d{3,4}$/.test(cvv);
+}
+
+// Validate UPI ID
+function validateUPI(upiId) {
+    return /^[a-zA-Z0-9._-]+@[a-zA-Z]{3,}$/.test(upiId);
+}
+
 // Setup Event Listeners
 function setupEventListeners() {
     // Cart Icon
@@ -220,6 +313,68 @@ function setupEventListeners() {
         if (e.target === cartModal) {
             cartModal.classList.remove('active');
         }
+    });
+
+    // Close Payment Modal
+    closePaymentBtn.addEventListener('click', () => {
+        closePaymentModal();
+    });
+
+    // Click outside payment modal
+    paymentModal.addEventListener('click', (e) => {
+        if (e.target === paymentModal) {
+            closePaymentModal();
+        }
+    });
+
+    // Payment Method Change
+    document.querySelectorAll('input[name="paymentMethod"]').forEach(radio => {
+        radio.addEventListener('change', updatePaymentForm);
+    });
+
+    // Payment Form Submit
+    paymentForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+        const fullName = document.getElementById('fullName').value;
+        const email = document.getElementById('billingEmail').value;
+        
+        let isValid = true;
+        let errorMessage = '';
+
+        // Validate based on payment method
+        if (paymentMethod === 'credit-card') {
+            const cardName = document.getElementById('cardName').value;
+            const cardNumber = document.getElementById('cardNumber').value;
+            const expiry = document.getElementById('cardExpiry').value;
+            const cvv = document.getElementById('cardCVV').value;
+
+            if (!validateCardNumber(cardNumber)) {
+                isValid = false;
+                errorMessage = 'Please enter a valid 16-digit card number';
+            } else if (!validateExpiry(expiry)) {
+                isValid = false;
+                errorMessage = 'Please enter expiry in MM/YY format';
+            } else if (!validateCVV(cvv)) {
+                isValid = false;
+                errorMessage = 'Please enter a valid CVV (3-4 digits)';
+            }
+        } else if (paymentMethod === 'upi') {
+            const upiId = document.getElementById('upiId').value;
+            if (!validateUPI(upiId)) {
+                isValid = false;
+                errorMessage = 'Please enter a valid UPI ID (e.g., name@upi)';
+            }
+        }
+
+        if (!isValid) {
+            showNotification(errorMessage);
+            return;
+        }
+
+        // Process Payment
+        processPayment(paymentMethod, fullName, email);
     });
 
     // Contact Form
@@ -246,11 +401,8 @@ function setupEventListeners() {
         if (cart.length === 0) {
             showNotification('Your cart is empty!');
         } else {
-            showNotification('Proceeding to checkout...');
-            cart = [];
-            updateCartCount();
             cartModal.classList.remove('active');
-            renderCart();
+            openPaymentModal();
         }
     });
 
@@ -272,6 +424,42 @@ function setupEventListeners() {
             }
         });
     });
+}
+
+// Process Payment
+function processPayment(method, name, email) {
+    const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    
+    let successMessage = '';
+    
+    switch(method) {
+        case 'credit-card':
+            const cardNumber = document.getElementById('cardNumber').value;
+            const lastFour = cardNumber.slice(-4);
+            successMessage = `Payment of $${total.toFixed(2)} processed successfully via Credit Card ending in ${lastFour}`;
+            break;
+        case 'paypal':
+            successMessage = `Payment of $${total.toFixed(2)} processed successfully via PayPal`;
+            break;
+        case 'upi':
+            const upiId = document.getElementById('upiId').value;
+            successMessage = `Payment of $${total.toFixed(2)} processed successfully via UPI (${upiId})`;
+            break;
+        case 'bank-transfer':
+            successMessage = `Payment of $${total.toFixed(2)} initiated. Please complete the bank transfer and enter the reference number.`;
+            break;
+    }
+
+    showNotification(successMessage);
+    
+    // Reset cart and close modal
+    setTimeout(() => {
+        cart = [];
+        updateCartCount();
+        closePaymentModal();
+        paymentForm.reset();
+        showNotification(`Order confirmation sent to ${email}`);
+    }, 2000);
 }
 
 // Smooth scrolling

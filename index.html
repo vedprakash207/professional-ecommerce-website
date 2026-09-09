@@ -6,6 +6,8 @@
     <title>PremiumHub - Premium Goods & Services</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Razorpay SDK -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 </head>
 <body>
     <!-- Navigation -->
@@ -161,7 +163,7 @@
             <div class="cart-footer">
                 <div class="cart-total">
                     <span>Total:</span>
-                    <span id="cartTotal">$0.00</span>
+                    <span id="cartTotal">₹0.00</span>
                 </div>
                 <button class="btn btn-primary" id="checkoutBtn">Proceed to Checkout</button>
             </div>
@@ -183,87 +185,29 @@
                     <div class="summary-items" id="summaryItems"></div>
                     <div class="summary-total">
                         <strong>Total Amount:</strong>
-                        <span id="summaryTotal">$0.00</span>
+                        <span id="summaryTotal">₹0.00</span>
                     </div>
                 </div>
 
-                <!-- Payment Methods -->
-                <div class="payment-methods">
-                    <h3>Select Payment Method</h3>
-                    
-                    <div class="method-option">
-                        <input type="radio" id="creditCard" name="paymentMethod" value="credit-card" checked>
-                        <label for="creditCard">
-                            <i class="fas fa-credit-card"></i> Credit/Debit Card
-                        </label>
-                    </div>
-
-                    <div class="method-option">
-                        <input type="radio" id="paypal" name="paymentMethod" value="paypal">
-                        <label for="paypal">
-                            <i class="fab fa-paypal"></i> PayPal
-                        </label>
-                    </div>
-
-                    <div class="method-option">
-                        <input type="radio" id="upi" name="paymentMethod" value="upi">
-                        <label for="upi">
-                            <i class="fas fa-mobile-alt"></i> UPI/Google Pay
-                        </label>
-                    </div>
-
-                    <div class="method-option">
-                        <input type="radio" id="bankTransfer" name="paymentMethod" value="bank-transfer">
-                        <label for="bankTransfer">
-                            <i class="fas fa-university"></i> Bank Transfer
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Payment Form -->
-                <form class="payment-form" id="paymentForm">
-                    <!-- Cardholder Details -->
-                    <div id="cardDetails" class="payment-details">
-                        <h4>Card Details</h4>
-                        <input type="text" placeholder="Cardholder Name" id="cardName" required>
-                        <input type="text" placeholder="Card Number (16 digits)" id="cardNumber" maxlength="16" required>
-                        <div class="card-row">
-                            <input type="text" placeholder="MM/YY" id="cardExpiry" maxlength="5" required>
-                            <input type="text" placeholder="CVV" id="cardCVV" maxlength="4" required>
-                        </div>
-                    </div>
-
-                    <!-- UPI Details -->
-                    <div id="upiDetails" class="payment-details" style="display: none;">
-                        <h4>UPI Details</h4>
-                        <input type="text" placeholder="UPI ID (e.g., name@upi)" id="upiId" required>
-                    </div>
-
-                    <!-- Bank Transfer Details -->
-                    <div id="bankDetails" class="payment-details" style="display: none;">
-                        <h4>Bank Transfer Details</h4>
-                        <p class="bank-info">
-                            <strong>Account Name:</strong> PremiumHub Business<br>
-                            <strong>Account Number:</strong> 1234567890<br>
-                            <strong>Bank Name:</strong> Premier Bank<br>
-                            <strong>IFSC Code:</strong> PREM0001234<br>
-                            <strong>Amount:</strong> <span id="bankAmount">$0.00</span>
-                        </p>
-                        <input type="text" placeholder="Enter Transaction Reference" id="transactionRef" required>
-                    </div>
-
-                    <!-- Billing Address -->
-                    <h4>Billing Address</h4>
+                <!-- Billing Address -->
+                <div class="payment-details">
+                    <h4>Billing Information</h4>
                     <input type="text" placeholder="Full Name" id="fullName" required>
                     <input type="email" placeholder="Email Address" id="billingEmail" required>
+                    <input type="tel" placeholder="Phone Number" id="billingPhone" required>
                     <input type="text" placeholder="Street Address" id="address" required>
                     <div class="address-row">
                         <input type="text" placeholder="City" id="city" required>
                         <input type="text" placeholder="ZIP Code" id="zipCode" required>
                     </div>
+                </div>
 
-                    <button type="submit" class="btn btn-primary payment-submit">Pay Now</button>
-                </form>
+                <!-- Razorpay Button -->
+                <button class="btn btn-primary payment-submit" id="razorpayBtn">Pay Now with Razorpay</button>
+                
+                <p class="payment-info">
+                    <i class="fas fa-lock"></i> Secure payment powered by Razorpay
+                </p>
             </div>
         </div>
     </div>

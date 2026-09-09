@@ -422,6 +422,9 @@ function processRazorpayPayment(customerData) {
         key: RAZORPAY_KEY_ID,
         amount: customerData.amount, // Amount in paise
         currency: 'INR',
+method: {
+   upi: True
+},
         name: MERCHANT_NAME,
         description: `Order from ${customerData.name} via ${paymentMethodName}`,
         image: 'https://via.placeholder.com/200',

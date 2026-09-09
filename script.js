@@ -1,5 +1,5 @@
-// Sample Products Data
-const products = [
+// Load Products from localStorage (from admin panel)
+let products = JSON.parse(localStorage.getItem('premiumhub_products')) || [
     {
         id: 1,
         name: 'Premium Headphones',
@@ -111,6 +111,11 @@ function init() {
 
 // Render Products
 function renderProducts() {
+    if (products.length === 0) {
+        productsGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 2rem; color: #9ca3af;">No products available yet. <a href="admin.html" style="color: #6366f1; font-weight: 600;">Add products now</a></p>';
+        return;
+    }
+    
     productsGrid.innerHTML = products.map(product => `
         <div class="product-card">
             <div class="product-image">${product.icon}</div>
@@ -408,10 +413,12 @@ function setupEventListeners() {
     });
 
     // Razorpay Button
-    razorpayBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        processRazorpayPayment();
-    });
+    if (razorpayBtn) {
+        razorpayBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            processRazorpayPayment();
+        });
+    }
 
     // Contact Form
     contactForm.addEventListener('submit', (e) => {

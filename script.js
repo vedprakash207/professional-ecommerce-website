@@ -4,42 +4,42 @@ const products = [
         id: 1,
         name: 'Premium Headphones',
         description: 'High-quality wireless headphones with noise cancellation',
-        price: 199.99,
+        price: 19999,
         icon: '🎧'
     },
     {
         id: 2,
         name: 'Smart Watch',
         description: 'Advanced fitness tracking and health monitoring',
-        price: 299.99,
+        price: 29999,
         icon: '⌚'
     },
     {
         id: 3,
         name: 'Laptop Stand',
         description: 'Ergonomic aluminum stand for better posture',
-        price: 79.99,
+        price: 7999,
         icon: '🖥️'
     },
     {
         id: 4,
         name: 'Mechanical Keyboard',
         description: 'Professional mechanical keyboard for typing',
-        price: 149.99,
+        price: 14999,
         icon: '⌨️'
     },
     {
         id: 5,
         name: '4K Webcam',
         description: 'Crystal clear 4K resolution for streaming',
-        price: 129.99,
+        price: 12999,
         icon: '📹'
     },
     {
         id: 6,
         name: 'USB-C Hub',
         description: 'Multi-port connectivity hub for laptops',
-        price: 59.99,
+        price: 5999,
         icon: '🔌'
     }
 ];
@@ -81,6 +81,13 @@ const services = [
 // Shopping Cart
 let cart = [];
 
+// IMPORTANT: Replace these with your actual Razorpay credentials from dashboard
+// Get these from: https://dashboard.razorpay.com/
+const RAZORPAY_KEY_ID = 'rzp_live_YOUR_KEY_ID'; // Replace with your Key ID
+const MERCHANT_NAME = 'PremiumHub';
+const MERCHANT_EMAIL = 'vedprakash05422@gmail.com';
+const MERCHANT_PHONE = '8208072975';
+
 // DOM Elements
 const productsGrid = document.getElementById('productsGrid');
 const servicesGrid = document.getElementById('servicesGrid');
@@ -93,7 +100,7 @@ const contactForm = document.getElementById('contactForm');
 const hamburger = document.getElementById('hamburger');
 const navMenu = document.querySelector('.nav-menu');
 const navLinks = document.querySelectorAll('.nav-link');
-const paymentForm = document.getElementById('paymentForm');
+const razorpayBtn = document.getElementById('razorpayBtn');
 
 // Initialize
 function init() {
@@ -111,7 +118,7 @@ function renderProducts() {
                 <h3 class="product-name">${product.name}</h3>
                 <p class="product-description">${product.description}</p>
                 <div class="product-footer">
-                    <span class="product-price">$${product.price.toFixed(2)}</span>
+                    <span class="product-price">₹${(product.price / 100).toFixed(2)}</span>
                     <button class="add-to-cart-btn" onclick="addToCart(${product.id})">
                         Add to Cart
                     </button>
@@ -163,7 +170,7 @@ function renderCart() {
             <div class="cart-item">
                 <div class="cart-item-info">
                     <div class="cart-item-name">${item.name}</div>
-                    <div class="cart-item-price">$${item.price.toFixed(2)} x ${item.quantity}</div>
+                    <div class="cart-item-price">₹${(item.price / 100).toFixed(2)} x ${item.quantity}</div>
                 </div>
                 <button class="cart-item-remove" onclick="removeFromCart(${index})">Remove</button>
             </div>
@@ -182,7 +189,7 @@ function removeFromCart(index) {
 // Update Cart Total
 function updateCartTotal() {
     const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    document.getElementById('cartTotal').textContent = `$${total.toFixed(2)}`;
+    document.getElementById('cartTotal').textContent = `₹${(total / 100).toFixed(2)}`;
 }
 
 // Show Notification
@@ -208,7 +215,6 @@ function showNotification(message) {
 function openPaymentModal() {
     paymentModal.classList.add('active');
     renderOrderSummary();
-    updatePaymentForm();
 }
 
 // Close Payment Modal
@@ -226,72 +232,146 @@ function renderOrderSummary() {
     summaryItems.innerHTML = cart.map(item => `
         <div class="summary-item">
             <span>${item.name} x ${item.quantity}</span>
-            <span>$${(item.price * item.quantity).toFixed(2)}</span>
+            <span>₹${(item.price * item.quantity / 100).toFixed(2)}</span>
         </div>
     `).join('');
     
-    summaryTotal.textContent = `$${total.toFixed(2)}`;
-    document.getElementById('bankAmount').textContent = `$${total.toFixed(2)}`;
+    summaryTotal.textContent = `₹${(total / 100).toFixed(2)}`;
 }
 
-// Update Payment Form based on selected method
-function updatePaymentForm() {
-    const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
-    
-    document.getElementById('cardDetails').style.display = paymentMethod === 'credit-card' ? 'block' : 'none';
-    document.getElementById('upiDetails').style.display = paymentMethod === 'upi' ? 'block' : 'none';
-    document.getElementById('bankDetails').style.display = paymentMethod === 'bank-transfer' ? 'block' : 'none';
-    
-    // Update required fields
-    if (paymentMethod === 'credit-card') {
-        document.getElementById('cardName').required = true;
-        document.getElementById('cardNumber').required = true;
-        document.getElementById('cardExpiry').required = true;
-        document.getElementById('cardCVV').required = true;
-        document.getElementById('upiId').required = false;
-        document.getElementById('transactionRef').required = false;
-    } else if (paymentMethod === 'upi') {
-        document.getElementById('upiId').required = true;
-        document.getElementById('cardName').required = false;
-        document.getElementById('cardNumber').required = false;
-        document.getElementById('cardExpiry').required = false;
-        document.getElementById('cardCVV').required = false;
-        document.getElementById('transactionRef').required = false;
-    } else if (paymentMethod === 'bank-transfer') {
-        document.getElementById('transactionRef').required = true;
-        document.getElementById('cardName').required = false;
-        document.getElementById('cardNumber').required = false;
-        document.getElementById('cardExpiry').required = false;
-        document.getElementById('cardCVV').required = false;
-        document.getElementById('upiId').required = false;
-    } else if (paymentMethod === 'paypal') {
-        document.getElementById('cardName').required = false;
-        document.getElementById('cardNumber').required = false;
-        document.getElementById('cardExpiry').required = false;
-        document.getElementById('cardCVV').required = false;
-        document.getElementById('upiId').required = false;
-        document.getElementById('transactionRef').required = false;
+// Process Razorpay Payment
+function processRazorpayPayment() {
+    const fullName = document.getElementById('fullName').value;
+    const billingEmail = document.getElementById('billingEmail').value;
+    const billingPhone = document.getElementById('billingPhone').value;
+    const address = document.getElementById('address').value;
+    const city = document.getElementById('city').value;
+    const zipCode = document.getElementById('zipCode').value;
+
+    // Validate form
+    if (!fullName || !billingEmail || !billingPhone || !address || !city || !zipCode) {
+        showNotification('Please fill in all billing details');
+        return;
     }
+
+    // Validate phone
+    if (!/^\d{10}$/.test(billingPhone.replace(/\D/g, ''))) {
+        showNotification('Please enter a valid 10-digit phone number');
+        return;
+    }
+
+    // Calculate total amount in paise
+    const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+    // Create Razorpay order
+    const options = {
+        key: RAZORPAY_KEY_ID,
+        amount: totalAmount, // Amount in paise
+        currency: 'INR',
+        name: MERCHANT_NAME,
+        description: `Order from ${fullName}`,
+        image: 'https://via.placeholder.com/200',
+        
+        prefill: {
+            name: fullName,
+            email: billingEmail,
+            contact: billingPhone
+        },
+        
+        notes: {
+            address: address,
+            city: city,
+            zipCode: zipCode
+        },
+        
+        theme: {
+            color: '#6366f1'
+        },
+        
+        handler: function(response) {
+            handlePaymentSuccess(response, {
+                name: fullName,
+                email: billingEmail,
+                phone: billingPhone,
+                address: address,
+                city: city,
+                zipCode: zipCode,
+                amount: totalAmount
+            });
+        },
+        
+        modal: {
+            ondismiss: function() {
+                showNotification('Payment cancelled. Please try again.');
+            }
+        }
+    };
+
+    // Open Razorpay checkout
+    const rzp1 = new Razorpay(options);
+    
+    rzp1.on('payment.failed', function(response) {
+        handlePaymentError(response);
+    });
+    
+    rzp1.open();
 }
 
-// Validate Card Number
-function validateCardNumber(cardNumber) {
-    return /^\d{16}$/.test(cardNumber.replace(/\s/g, ''));
+// Handle Payment Success
+function handlePaymentSuccess(razorpayResponse, customerData) {
+    // Here you would typically send the payment details to your backend
+    console.log('Payment successful!', razorpayResponse);
+    
+    const message = `
+        ✅ Payment Successful!
+        
+        Transaction ID: ${razorpayResponse.razorpay_payment_id}
+        Amount: ₹${(customerData.amount / 100).toFixed(2)}
+        
+        Order confirmation email sent to ${customerData.email}
+    `;
+    
+    showNotification('Payment successful! Order confirmed.');
+    
+    // Reset cart and close modal
+    setTimeout(() => {
+        cart = [];
+        updateCartCount();
+        closePaymentModal();
+        
+        // Clear form
+        document.getElementById('fullName').value = '';
+        document.getElementById('billingEmail').value = '';
+        document.getElementById('billingPhone').value = '';
+        document.getElementById('address').value = '';
+        document.getElementById('city').value = '';
+        document.getElementById('zipCode').value = '';
+        
+        // Show detailed success message
+        showSuccessMessage(razorpayResponse, customerData);
+    }, 2000);
 }
 
-// Validate Card Expiry
-function validateExpiry(expiry) {
-    return /^\d{2}\/\d{2}$/.test(expiry);
+// Handle Payment Error
+function handlePaymentError(response) {
+    showNotification(`Payment failed: ${response.error.description}`);
+    console.error('Payment error:', response);
 }
 
-// Validate CVV
-function validateCVV(cvv) {
-    return /^\d{3,4}$/.test(cvv);
-}
+// Show Success Message
+function showSuccessMessage(response, data) {
+    const message = `
+Order Confirmed!
 
-// Validate UPI ID
-function validateUPI(upiId) {
-    return /^[a-zA-Z0-9._-]+@[a-zA-Z]{3,}$/.test(upiId);
+Payment ID: ${response.razorpay_payment_id}
+Amount: ₹${(data.amount / 100).toFixed(2)}
+
+Confirmation email has been sent to ${data.email}
+
+Thank you for shopping with PremiumHub!
+    `;
+    
+    alert(message);
 }
 
 // Setup Event Listeners
@@ -327,54 +407,10 @@ function setupEventListeners() {
         }
     });
 
-    // Payment Method Change
-    document.querySelectorAll('input[name="paymentMethod"]').forEach(radio => {
-        radio.addEventListener('change', updatePaymentForm);
-    });
-
-    // Payment Form Submit
-    paymentForm.addEventListener('submit', (e) => {
+    // Razorpay Button
+    razorpayBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        
-        const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
-        const fullName = document.getElementById('fullName').value;
-        const email = document.getElementById('billingEmail').value;
-        
-        let isValid = true;
-        let errorMessage = '';
-
-        // Validate based on payment method
-        if (paymentMethod === 'credit-card') {
-            const cardName = document.getElementById('cardName').value;
-            const cardNumber = document.getElementById('cardNumber').value;
-            const expiry = document.getElementById('cardExpiry').value;
-            const cvv = document.getElementById('cardCVV').value;
-
-            if (!validateCardNumber(cardNumber)) {
-                isValid = false;
-                errorMessage = 'Please enter a valid 16-digit card number';
-            } else if (!validateExpiry(expiry)) {
-                isValid = false;
-                errorMessage = 'Please enter expiry in MM/YY format';
-            } else if (!validateCVV(cvv)) {
-                isValid = false;
-                errorMessage = 'Please enter a valid CVV (3-4 digits)';
-            }
-        } else if (paymentMethod === 'upi') {
-            const upiId = document.getElementById('upiId').value;
-            if (!validateUPI(upiId)) {
-                isValid = false;
-                errorMessage = 'Please enter a valid UPI ID (e.g., name@upi)';
-            }
-        }
-
-        if (!isValid) {
-            showNotification(errorMessage);
-            return;
-        }
-
-        // Process Payment
-        processPayment(paymentMethod, fullName, email);
+        processRazorpayPayment();
     });
 
     // Contact Form
@@ -424,42 +460,6 @@ function setupEventListeners() {
             }
         });
     });
-}
-
-// Process Payment
-function processPayment(method, name, email) {
-    const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    
-    let successMessage = '';
-    
-    switch(method) {
-        case 'credit-card':
-            const cardNumber = document.getElementById('cardNumber').value;
-            const lastFour = cardNumber.slice(-4);
-            successMessage = `Payment of $${total.toFixed(2)} processed successfully via Credit Card ending in ${lastFour}`;
-            break;
-        case 'paypal':
-            successMessage = `Payment of $${total.toFixed(2)} processed successfully via PayPal`;
-            break;
-        case 'upi':
-            const upiId = document.getElementById('upiId').value;
-            successMessage = `Payment of $${total.toFixed(2)} processed successfully via UPI (${upiId})`;
-            break;
-        case 'bank-transfer':
-            successMessage = `Payment of $${total.toFixed(2)} initiated. Please complete the bank transfer and enter the reference number.`;
-            break;
-    }
-
-    showNotification(successMessage);
-    
-    // Reset cart and close modal
-    setTimeout(() => {
-        cart = [];
-        updateCartCount();
-        closePaymentModal();
-        paymentForm.reset();
-        showNotification(`Order confirmation sent to ${email}`);
-    }, 2000);
 }
 
 // Smooth scrolling
